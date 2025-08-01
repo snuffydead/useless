@@ -1,21 +1,31 @@
-local API = "https://decompiler.ashore.rip/";
+-- wow wow wow
 
-local Decompile = function(Script)
-    local ScriptBytecode = getscriptbytecode(Script);
+local httpService = cloneref(game:GetService('HttpService'))
 
-    if ScriptBytecode then
-        local Output = request({
-            Url = `{API}decompile`;
-            Method = "POST";
-            Body = ScriptBytecode;
-        });
-      
-        if Output.StatusCode == 200 then
-            return Output.Body;
-        end;
+local function decompile(scr)
+    local s, bytecode = pcall(getscriptbytecode, scr)
+    if not s then
+        return `failed to get bytecode { bytecode }`
+    end
 
-        return `Failed to decompile bytecode\n{ScriptBytecode}`;
-    end;
-end;
+    local response = request({
+        Url = 'https://unluau.lonegladiator.dev/unluau/decompile',
+        Method = 'POST',
+        Headers = {
+            ['Content-Type'] = 'application/json',
+        },
+        Body = httpService:JSONEncode({
+            version = 5,
+            bytecode = crypt.base64.encode(bytecode)
+        })
+    })
 
-getgenv().decompile = Decompile;
+    local decoded = httpService:JSONDecode(response.Body)
+    if decoded.status ~= 'ok' then
+        return `decompilation failed: { decoded.status }`
+    end
+
+    return decoded.output
+end
+
+getgenv().decompile = decompile
